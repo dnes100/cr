@@ -8,48 +8,48 @@
 class Combiner
   attr_accessor :key_extractor
 
-	def initialize(&key_extractor)
+  def initialize(&key_extractor)
     self.key_extractor = key_extractor
-	end
+  end
 
-	def combine(*enumerators)
-		Enumerator.new do |yielder|
-			last_values = Array.new(enumerators.size)
+  def combine(*enumerators)
+    Enumerator.new do |yielder|
+      last_values = Array.new(enumerators.size)
       in_progress = enumerators.any?
-			while in_progress
-				last_values.each_with_index do |value, index|
+      while in_progress
+        last_values.each_with_index do |value, index|
           if value.nil? && enumerators[index]
-						begin
-							last_values[index] = enumerators[index].next
-						rescue StopIteration
-							enumerators[index] = nil
-						end
-					end
-				end
+            begin
+              last_values[index] = enumerators[index].next
+            rescue StopIteration
+              enumerators[index] = nil
+            end
+          end
+        end
 
         in_progress = enumerators.any? || !last_values.compact.empty?
-				if in_progress
+        if in_progress
           min_key = get_min_key(last_values)
-					values = Array.new(last_values.size)
-					last_values.each_with_index do |value, index|
-						if key(value) == min_key
-							values[index] = value
-							last_values[index] = nil
-						end
-					end
-					yielder.yield(values)
-				end
-			end
-		end
-	end
+          values = Array.new(last_values.size)
+          last_values.each_with_index do |value, index|
+            if key(value) == min_key
+              values[index] = value
+              last_values[index] = nil
+            end
+          end
+          yielder.yield(values)
+        end
+      end
+    end
+  end
 
   private
 
-	def key(value)
+  def key(value)
     return if value.nil?
 
-		key_extractor.call(value)
-	end
+    key_extractor.call(value)
+  end
 
   def get_min_key(values)
     keys = values.map { |e| key(e) }

@@ -1,44 +1,18 @@
-require File.expand_path('lib/combiner',File.dirname(__FILE__))
 require 'csv'
 require 'date'
 
-def latest(name)
-  files = Dir["#{ ENV["HOME"] }/workspace/*#{name}*.txt"]
+require_relative 'lib/combiner'
+require_relative 'constants'
+require_relative 'string'
+require_relative 'float'
 
-  files.sort_by! do |file|
-    last_date = /\d+-\d+-\d+_[[:alpha:]]+\.txt$/.match file
-    last_date = last_date.to_s.match /\d+-\d+-\d+/
-
-    date = DateTime.parse(last_date.to_s)
-    date
-  end
-
-  throw RuntimeError if files.empty?
-
-  files.last
-end
-
-class String
-  def from_german_to_f
-    self.gsub(',', '.').to_f
-  end
-end
-
-class Float
-  def to_german_s
-    self.to_s.gsub('.', ',')
-  end
-end
-
+# Description will go here
+#
 class Modifier
 
-  KEYWORD_UNIQUE_ID = 'Keyword Unique ID'
-  LAST_VALUE_WINS = ['Account ID', 'Account Name', 'Campaign', 'Ad Group', 'Keyword', 'Keyword Type', 'Subid', 'Paused', 'Max CPC', 'Keyword Unique ID', 'ACCOUNT', 'CAMPAIGN', 'BRAND', 'BRAND+CATEGORY', 'ADGROUP', 'KEYWORD']
-  LAST_REAL_VALUE_WINS = ['Last Avg CPC', 'Last Avg Pos']
-  INT_VALUES = ['Clicks', 'Impressions', 'ACCOUNT - Clicks', 'CAMPAIGN - Clicks', 'BRAND - Clicks', 'BRAND+CATEGORY - Clicks', 'ADGROUP - Clicks', 'KEYWORD - Clicks']
-  FLOAT_VALUES = ['Avg CPC', 'CTR', 'Est EPC', 'newBid', 'Costs', 'Avg Pos']
+  include Constants
 
-  LINES_PER_FILE = 120000
+  attr_accessor :saleamount_factor, :cancellation_factor
 
   def initialize(saleamount_factor, cancellation_factor)
     @saleamount_factor = saleamount_factor
@@ -49,22 +23,8 @@ class Modifier
     input = sort(input)
 
     input_enumerator = lazy_read(input)
-
-    combiner = Combiner.new do |value|
-      value[KEYWORD_UNIQUE_ID]
-    end.combine(input_enumerator)
-
-    merger = Enumerator.new do |yielder|
-      while true
-        begin
-          list_of_rows = combiner.next
-          merged = combine_hashes(list_of_rows)
-          yielder.yield(combine_values(merged))
-        rescue StopIteration
-          break
-        end
-      end
-    end
+    combined_enumerator = combine_enumerators(input_enumerator)
+    merger = get_merger_enumerator(combined_enumerator)
 
     done = false
     file_index = 0
@@ -93,7 +53,36 @@ class Modifier
     end
   end
 
+  def sort(file)
+    output = "#{file}.sorted"
+    content_as_table = parse(file)
+    headers = content_as_table.headers
+    index_of_key = headers.index('Clicks')
+    content = content_as_table.sort_by { |a| -a[index_of_key].to_i }
+    write(content, headers, output)
+
+    return output
+  end
+
   private
+
+  def combine_enumerators(*enumerators)
+    combiner = Combiner.new do |value|
+      value[KEYWORD_UNIQUE_ID]
+    end
+
+    combiner.combine(*enumerators)
+  end
+
+  def get_merger_enumerator(enumerator)
+    Enumerator.new do |yielder|
+      loop do
+        list_of_rows = enumerator.next
+        merged = combine_hashes(list_of_rows)
+        yielder.yield(combine_values(merged))
+      end
+    end
+  end
 
   def combine(merged)
     result = []
@@ -116,12 +105,13 @@ class Modifier
     FLOAT_VALUES.each do |key|
       hash[key] = hash[key][0].from_german_to_f.to_german_s
     end
-    ['number of commissions'].each do |key|
-      hash[key] = (@cancellation_factor * hash[key][0].from_german_to_f).to_german_s
+    CANCELLATION_FACTORS.each do |key|
+      hash[key] = (cancellation_factor * hash[key][0].from_german_to_f).to_german_s
     end
-    ['Commission Value', 'ACCOUNT - Commission Value', 'CAMPAIGN - Commission Value', 'BRAND - Commission Value', 'BRAND+CATEGORY - Commission Value', 'ADGROUP - Commission Value', 'KEYWORD - Commission Value'].each do |key|
-      hash[key] = (@cancellation_factor * @saleamount_factor * hash[key][0].from_german_to_f).to_german_s
+    COMMISSIONS.each do |key|
+      hash[key] = (cancellation_factor * saleamount_factor * hash[key][0].from_german_to_f).to_german_s
     end
+
     hash
   end
 
@@ -143,12 +133,11 @@ class Modifier
     result
   end
 
-  DEFAULT_CSV_OPTIONS = { :col_sep => "\t", :headers => :first_row }
-
   def parse(file)
     CSV.read(file, DEFAULT_CSV_OPTIONS)
   end
 
+  # TODO use .lazy instead?
   def lazy_read(file)
     Enumerator.new do |yielder|
       CSV.foreach(file, DEFAULT_CSV_OPTIONS) do |row|
@@ -165,23 +154,4 @@ class Modifier
       end
     end
   end
-
-  public
-  def sort(file)
-    output = "#{file}.sorted"
-    content_as_table = parse(file)
-    headers = content_as_table.headers
-    index_of_key = headers.index('Clicks')
-    content = content_as_table.sort_by { |a| -a[index_of_key].to_i }
-    write(content, headers, output)
-    return output
-  end
 end
-
-modified = input = latest('project_2012-07-27_2012-10-10_performancedata')
-modification_factor = 1
-cancellaction_factor = 0.4
-modifier = Modifier.new(modification_factor, cancellaction_factor)
-modifier.modify(modified, input)
-
-puts "DONE modifying"

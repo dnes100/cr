@@ -3,7 +3,7 @@ require_relative '../modifier.rb'
 
 describe 'Modifier' do
   let(:saleamount_factor) { 1 }
-  let(:cancellation_factor) { 2 }
+  let(:cancellation_factor) { 0.4 }
   let(:modifier) { Modifier.new(saleamount_factor, cancellation_factor)}
 
   before :all do
@@ -32,11 +32,27 @@ describe 'Modifier' do
 
   end
 
+  describe "#combine_hashes" do
+    let(:input_hash) { get_input_hash_for_combine_values }
+
+    subject { modifier.send(:combine_values, input_hash)}
+  end
+
+  describe "#combine_hashes" do
+    let(:input_file) { File.expand_path('data/test.csv', File.dirname(__FILE__)) }
+    let(:rows) { get_csv_rows(input_file) }
+
+    subject { modifier.send(:combine_hashes, rows)}
+
+    it "should not be nil" do
+      is_expected.to eq get_output_hash_for_combine_hashes
+    end
+  end
+
   private
 
   def create_test_csv
     headers = [
-      Modifier::KEYWORD_UNIQUE_ID,
       Modifier::LAST_VALUE_WINS,
       Modifier::LAST_REAL_VALUE_WINS,
       Modifier::INT_VALUES,
@@ -50,7 +66,7 @@ describe 'Modifier' do
       row[headers.index('Clicks')] = i
       row[0] = i
       [Modifier::COMMISSIONS, Modifier::CANCELLATION_FACTORS].flatten.each do |key|
-        row[headers.index(key)] = '1,000'
+        row[headers.index(key)] = '1,00'
       end
 
       content << row
@@ -74,6 +90,149 @@ describe 'Modifier' do
     end
   end
 
+  def get_csv_rows(csv)
+    CSV.foreach(csv, Modifier::DEFAULT_CSV_OPTIONS).map do |row|
+      row
+    end
+  end
+
+  def get_output_hash_for_combine_hashes
+    {
+      "ACCOUNT - Clicks" => ["", "", "", "", ""],
+      "ACCOUNT - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
+      "ACCOUNT" => ["", "", "", "", ""],
+      "ADGROUP - Clicks" => ["", "", "", "", ""],
+      "ADGROUP - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
+      "ADGROUP" => ["", "", "", "", ""],
+      "Account ID" => ["0", "1", "2", "3", "4"],
+      "Account Name" => ["", "", "", "", ""],
+      "Ad Group" => ["", "", "", "", ""],
+      "Avg CPC" => ["", "", "", "", ""],
+      "Avg Pos" => ["", "", "", "", ""],
+      "BRAND - Clicks" => ["", "", "", "", ""],
+      "BRAND - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
+      "BRAND" => ["", "", "", "", ""],
+      "BRAND+CATEGORY - Clicks" => ["", "", "", "", ""],
+      "BRAND+CATEGORY - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
+      "BRAND+CATEGORY" => ["", "", "", "", ""],
+      "CAMPAIGN - Clicks" => ["", "", "", "", ""],
+      "CAMPAIGN - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
+      "CAMPAIGN" => ["", "", "", "", ""],
+      "CTR" => ["", "", "", "", ""],
+      "Campaign" => ["", "", "", "", ""],
+      "Clicks" => ["0", "1", "2", "3", "4"],
+      "Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
+      "Costs" => ["", "", "", "", ""],
+      "Est EPC" => ["", "", "", "", ""],
+      "Impressions" => ["", "", "", "", ""],
+      "KEYWORD - Clicks" => ["", "", "", "", ""],
+      "KEYWORD - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
+      "KEYWORD" => ["", "", "", "", ""],
+      "Keyword Type" => ["", "", "", "", ""],
+      "Keyword Unique ID" => ["", "", "", "", ""],
+      "Keyword" => ["", "", "", "", ""],
+      "Last Avg CPC" => ["", "", "", "", ""],
+      "Last Avg Pos" => ["", "", "", "", ""],
+      "Max CPC" => ["", "", "", "", ""],
+      "Paused" => ["", "", "", "", ""],
+      "Subid" => ["", "", "", "", ""],
+      "newBid" => ["", "", "", "", ""],
+      "number of commissions" => ["1,00", "1,00", "1,00", "1,00", "1,00"]
+    }
+  end
+
+  def get_input_hash_for_combine_values
+    {
+      "Account ID"=>["4", "5"],
+      "Account Name"=>[""],
+      "Campaign"=>[""],
+      "Ad Group"=>[""],
+      "Keyword"=>[""],
+      "Keyword Type"=>[""],
+      "Subid"=>[""],
+      "Paused"=>[""],
+      "Max CPC"=>[""],
+      "Keyword Unique ID"=>[""],
+      "ACCOUNT"=>[""],
+      "CAMPAIGN"=>[""],
+      "BRAND"=>[""],
+      "BRAND+CATEGORY"=>[""],
+      "ADGROUP"=>[""],
+      "KEYWORD"=>[""],
+      "Last Avg CPC"=>["", 1],
+      "Last Avg Pos"=>[""],
+      "Clicks"=>[4],
+      "Impressions"=>[""],
+      "ACCOUNT - Clicks"=>[""],
+      "CAMPAIGN - Clicks"=>[""],
+      "BRAND - Clicks"=>[""],
+      "BRAND+CATEGORY - Clicks"=>[""],
+      "ADGROUP - Clicks"=>[""],
+      "KEYWORD - Clicks"=>[""],
+      "Avg CPC"=>["1,00"],
+      "CTR"=>[""],
+      "Est EPC"=>[""],
+      "newBid"=>[""],
+      "Costs"=>[""],
+      "Avg Pos"=>[""],
+      "Commission Value"=>["1,00"],
+      "ACCOUNT - Commission Value"=>["1,00"],
+      "CAMPAIGN - Commission Value"=>["1,00"],
+      "BRAND - Commission Value"=>["1,00"],
+      "BRAND+CATEGORY - Commission Value"=>["1,00"],
+      "ADGROUP - Commission Value"=>["1,00"],
+      "KEYWORD - Commission Value"=>["1,00"],
+      "number of commissions"=>["1,00"]
+    }
+  end
+
+  def get_output_hash_for_combine_values
+    {
+      "Account ID"=>"5",
+      "Account Name"=>"",
+      "Campaign"=>"",
+      "Ad Group"=>"",
+      "Keyword"=>"",
+      "Keyword Type"=>"",
+      "Subid"=>"",
+      "Paused"=>"",
+      "Max CPC"=>"",
+      "Keyword Unique ID"=>"",
+      "ACCOUNT"=>"",
+      "CAMPAIGN"=>"",
+      "BRAND"=>"",
+      "BRAND+CATEGORY"=>"",
+      "ADGROUP"=>"",
+      "KEYWORD"=>"",
+      "Last Avg CPC"=> 1,
+      "Last Avg Pos"=>nil,
+      "Clicks"=>"4",
+      "Impressions"=>"",
+      "ACCOUNT - Clicks"=>"",
+      "CAMPAIGN - Clicks"=>"",
+      "BRAND - Clicks"=>"",
+      "BRAND+CATEGORY - Clicks"=>"",
+      "ADGROUP - Clicks"=>"",
+      "KEYWORD - Clicks"=>"",
+      "Avg CPC"=>"1,0",
+      "CTR"=>"0,0",
+      "Est EPC"=>"0,0",
+      "newBid"=>"0,0",
+      "Costs"=>"0,0",
+      "Avg Pos"=>"0,0",
+      "Commission Value"=>"2,0",
+      "ACCOUNT - Commission Value"=>"2,0",
+      "CAMPAIGN - Commission Value"=>"2,0",
+      "BRAND - Commission Value"=>"2,0",
+      "BRAND+CATEGORY - Commission Value"=>"2,0",
+      "ADGROUP - Commission Value"=>"2,0",
+      "KEYWORD - Commission Value"=>"2,0",
+      "number of commissions"=>"2,0"
+    }
+  end
+
+=begin
+  # remove this
   def test
     modified = input = latest('project_2012-07-27_2012-10-10_performancedata')
     modification_factor = 1
@@ -84,6 +243,7 @@ describe 'Modifier' do
     puts "DONE modifying"
   end
 
+  # remove this
   def latest(name)
     files = Dir["#{ ENV["HOME"] }/workspace/*#{name}*.txt"]
 
@@ -99,4 +259,6 @@ describe 'Modifier' do
 
     files.last
   end
+=end
+
 end

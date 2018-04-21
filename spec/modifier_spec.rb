@@ -39,7 +39,7 @@ describe 'Modifier' do
   end
 
   describe "#combine_hashes" do
-    let(:input_file) { File.expand_path('data/test.csv', File.dirname(__FILE__)) }
+    let(:input_file) { File.expand_path('data/sort.csv', File.dirname(__FILE__)) }
     let(:rows) { get_csv_rows(input_file) }
 
     subject { modifier.send(:combine_hashes, rows)}
@@ -98,46 +98,9 @@ describe 'Modifier' do
 
   def get_output_hash_for_combine_hashes
     {
-      "ACCOUNT - Clicks" => ["", "", "", "", ""],
-      "ACCOUNT - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
-      "ACCOUNT" => ["", "", "", "", ""],
-      "ADGROUP - Clicks" => ["", "", "", "", ""],
-      "ADGROUP - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
-      "ADGROUP" => ["", "", "", "", ""],
-      "Account ID" => ["0", "1", "2", "3", "4"],
-      "Account Name" => ["", "", "", "", ""],
-      "Ad Group" => ["", "", "", "", ""],
-      "Avg CPC" => ["", "", "", "", ""],
-      "Avg Pos" => ["", "", "", "", ""],
-      "BRAND - Clicks" => ["", "", "", "", ""],
-      "BRAND - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
-      "BRAND" => ["", "", "", "", ""],
-      "BRAND+CATEGORY - Clicks" => ["", "", "", "", ""],
-      "BRAND+CATEGORY - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
-      "BRAND+CATEGORY" => ["", "", "", "", ""],
-      "CAMPAIGN - Clicks" => ["", "", "", "", ""],
-      "CAMPAIGN - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
-      "CAMPAIGN" => ["", "", "", "", ""],
-      "CTR" => ["", "", "", "", ""],
-      "Campaign" => ["", "", "", "", ""],
-      "Clicks" => ["0", "1", "2", "3", "4"],
-      "Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
-      "Costs" => ["", "", "", "", ""],
-      "Est EPC" => ["", "", "", "", ""],
-      "Impressions" => ["", "", "", "", ""],
-      "KEYWORD - Clicks" => ["", "", "", "", ""],
-      "KEYWORD - Commission Value" => ["1,00", "1,00", "1,00", "1,00", "1,00"],
-      "KEYWORD" => ["", "", "", "", ""],
-      "Keyword Type" => ["", "", "", "", ""],
-      "Keyword Unique ID" => ["", "", "", "", ""],
-      "Keyword" => ["", "", "", "", ""],
-      "Last Avg CPC" => ["", "", "", "", ""],
-      "Last Avg Pos" => ["", "", "", "", ""],
-      "Max CPC" => ["", "", "", "", ""],
-      "Paused" => ["", "", "", "", ""],
-      "Subid" => ["", "", "", "", ""],
-      "newBid" => ["", "", "", "", ""],
-      "number of commissions" => ["1,00", "1,00", "1,00", "1,00", "1,00"]
+      "Clicks" => ["0", "5", "3", "1"],
+      "Keyword Unique ID" => ["1", "2", "3", "4"],
+      "Second" => ["zero", "four", "three", "one"]
     }
   end
 

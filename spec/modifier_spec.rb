@@ -23,13 +23,22 @@ describe 'Modifier' do
   end
 
   describe "#modify" do
-    let(:input_file) { File.expand_path('data/test.csv', File.dirname(__FILE__)) }
+    before do
+      stub_const("Modifier::Constants::LINES_PER_FILE", 4)
+    end
+
+    let(:input_file) { File.expand_path('data/modify.csv', File.dirname(__FILE__)) }
     let(:output_file) { File.expand_path('data/output.csv', File.dirname(__FILE__)) }
 
     subject { modifier.modify(output_file, input_file) }
 
     it { is_expected.to be_nil }
 
+    it "should split files" do
+      subject
+      outputs = Dir[File.expand_path('data/output.csv*', File.dirname(__FILE__))]
+      expect(outputs.length).to eq(3)
+    end
   end
 
   describe "#combine_hashes" do
@@ -51,7 +60,16 @@ describe 'Modifier' do
 
   private
 
+  def remove_outputs
+    outputs = Dir[File.expand_path('data/output.csv*', File.dirname(__FILE__))]
+    outputs.each do |file|
+      File.delete(file)
+    end
+  end
+
   def create_test_csv
+    remove_outputs
+
     headers = [
       Modifier::LAST_VALUE_WINS,
       Modifier::LAST_REAL_VALUE_WINS,
@@ -61,7 +79,7 @@ describe 'Modifier' do
       Modifier::CANCELLATION_FACTORS
     ].flatten
     content = []
-    5.times do |i|
+    7.times do |i|
       row = [''] * headers.length
       row[headers.index('Clicks')] = i
       row[0] = i
@@ -71,8 +89,8 @@ describe 'Modifier' do
 
       content << row
     end
-    output = File.expand_path('data/test.csv', File.dirname(__FILE__))
-    write(content, headers, output)
+    path = File.expand_path('data/modify.csv', File.dirname(__FILE__))
+    write(content, headers, path)
   end
 
   def write(content, headers, output)

@@ -6,10 +6,13 @@ require_relative 'constants'
 require_relative 'string'
 require_relative 'float'
 
-# Description will go here
+# Modifier processes the input csv data
+#   - selects correct column among some,
+#   - calculates (commissions) new values depending upon: saleamount_factor,
+#                                           cancellation factor,
+#                                           data type
 #
 class Modifier
-
   include Constants
 
   attr_accessor :saleamount_factor, :cancellation_factor
@@ -25,32 +28,7 @@ class Modifier
     input_enumerator = lazy_read(input)
     combined_enumerator = combine_enumerators(input_enumerator)
     merger = get_merger_enumerator(combined_enumerator)
-
-    done = false
-    file_index = 0
-    file_name = output.gsub('.txt', '')
-    while !done do
-      CSV.open(file_name + "_#{file_index}.txt", "wb", DEFAULT_CSV_OPTIONS) do |csv|
-        headers_written = false
-        line_count = 0
-        while line_count < LINES_PER_FILE
-          begin
-            merged = merger.next
-            if not headers_written
-              csv << merged.keys
-              headers_written = true
-              line_count +=1
-            end
-            csv << merged
-            line_count +=1
-          rescue StopIteration
-            done = true
-            break
-          end
-        end
-        file_index += 1
-      end
-    end
+    write_outputs(merger, output)
   end
 
   def sort(file)
@@ -65,6 +43,22 @@ class Modifier
   end
 
   private
+
+  def write_outputs(merger, output)
+    file_name = output.gsub('.txt', '')
+    file_index = 0
+    loop do
+      headers = merger.peek.keys
+      CSV.open(file_name + "_#{file_index}.txt", "wb", DEFAULT_CSV_OPTIONS) do |csv|
+        csv << headers
+
+        (LINES_PER_FILE - 1).times do
+          csv << merger.next
+        end
+      end
+      file_index = file_index.next
+    end
+  end
 
   def combine_enumerators(*enumerators)
     combiner = Combiner.new do |value|

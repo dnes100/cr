@@ -8,9 +8,10 @@ require_relative 'float'
 
 # Modifier processes the input csv data
 #   - selects correct column among some,
-#   - calculates (commissions) new values depending upon: saleamount_factor,
-#                                           cancellation factor,
-#                                           data type
+#   - calculates (commissions) new values depending upon:
+#                                           - saleamount_factor,
+#                                           - cancellation factor,
+#                                           - data type
 #
 class Modifier
   include Constants
